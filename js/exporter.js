@@ -53,17 +53,565 @@ const exporter = {
      */
     exportForDeploy(bot) {
         const exportData = this.prepareExportData(bot);
-        
+
         // Создаём структуру файлов для деплоя
         const deployStructure = {
             'bot-config.json': JSON.stringify(exportData, null, 2),
+            'bot.js': this.generateBotRunnerJS(),
             'bot.py': this.generateBotRunner(),
             'requirements.txt': this.generateRequirements(),
+            'package.json': this.generatePackageJson(bot),
             'README.md': this.generateReadme(bot),
             '.env.example': this.generateEnvExample(bot)
         };
 
         return deployStructure;
+    },
+
+    /**
+     * Генерация package.json
+     */
+    generatePackageJson(bot) {
+        return JSON.stringify({
+            "name": bot.username || 'telegram-bot',
+            "version": "1.0.0",
+            "description": bot.description || 'Telegram bot created with BotBuilder',
+            "main": "bot.js",
+            "scripts": {
+                "start": "node bot.js",
+                "dev": "node --watch bot.js"
+            },
+            "dependencies": {
+                "node-fetch": "^2.7.0",
+                "express": "^4.18.2"
+            },
+            "engines": {
+                "node": ">=16.0.0"
+            },
+            "author": "BotBuilder",
+            "license": "MIT"
+        }, null, 2);
+    },
+
+    /**
+     * Генерация JS-раннера для бота
+     */
+    generateBotRunnerJS() {
+        return `/**
+ * Telegram Bot Runner (JavaScript)
+ * Автоматически сгенерированный бот из BotBuilder
+ * Работает в Node.js с polling или webhook
+ */
+
+const fetch = require('node-fetch');
+const express = require('express');
+
+// Загрузка конфигурации
+const config = require('./bot-config.json');
+require('dotenv').config();
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBHOOK_URL = process.env.WEBHOOK_URL || null;
+
+if (!BOT_TOKEN) {
+    console.error('❌ BOT_TOKEN не найден! Добавьте его в .env файл');
+    process.exit(1);
+}
+
+/**
+ * Telegram Bot Class
+ */
+class TelegramBot {
+    constructor(token, webhookUrl = null) {
+        this.token = token;
+        this.webhookUrl = webhookUrl;
+        this.apiBase = 'https://api.telegram.org/bot' + token;
+        this.scenes = {};
+        this.userStates = new Map();
+        this.userVariables = new Map();
+        
+        // Загрузка сценариев из конфига
+        if (config.config && config.config.scenes) {
+            config.config.scenes.forEach(scene => {
+                this.registerScene(scene.id, scene);
+            });
+        }
+        
+        // Регистрация обработчиков
+        this.setupHandlers();
+    }
+
+    /**
+     * HTTP запрос к Telegram API
+     */
+    async request(method, params = {}) {
+        const url = \`\${this.apiBase}/\${method}\`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(params)
+            });
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Telegram API error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Отправка сообщения
+     */
+    async sendMessage(chatId, text, options = {}) {
+        return await this.request('sendMessage', {
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'HTML',
+            ...options
+        });
+    }
+
+    /**
+     * Отправка с клавиатурой
+     */
+    async sendMessageWithKeyboard(chatId, text, keyboard, inline = false) {
+        const params = {
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'HTML'
+        };
+        
+        if (inline) {
+            params.reply_markup = { inline_keyboard: keyboard };
+        } else {
+            params.reply_markup = {
+                keyboard: keyboard,
+                resize_keyboard: true
+            };
+        }
+        
+        return await this.request('sendMessage', params);
+    }
+
+    /**
+     * Ответ на callback query
+     */
+    async answerCallbackQuery(callbackQueryId, text = null, showAlert = false) {
+        return await this.request('answerCallbackQuery', {
+            callback_query_id: callbackQueryId,
+            text: text,
+            show_alert: showAlert
+        });
+    }
+
+    /**
+     * Регистрация сценария
+     */
+    registerScene(name, scenario) {
+        this.scenes[name] = scenario;
+    }
+
+    /**
+     * Настройка обработчиков
+     */
+    setupHandlers() {
+        // Обработчик команд
+        this.onCommand('start', async (message) => {
+            await this.handleCommand(message, 'start');
+        });
+        
+        this.onCommand('help', async (message) => {
+            await this.handleCommand(message, 'help');
+        });
+    }
+
+    /**
+     * Обработчик команд
+     */
+    async handleCommand(message, command) {
+        const userId = message.from.id;
+        const chatId = message.chat.id;
+        
+        // Ищем сценарий с таким триггером
+        const scene = Object.values(this.scenes).find(s => 
+            s.trigger === '/' + command || s.trigger === command
+        );
+        
+        if (scene) {
+            this.userStates.set(userId, { scene: scene.id, currentBlock: 0 });
+            await this.processSceneStep(userId, chatId, scene, 0);
+        } else {
+            await this.sendMessage(chatId, 'Команда не найдена');
+        }
+    }
+
+    /**
+     * Обработка входящего обновления
+     */
+    async handleUpdate(update) {
+        try {
+            if (update.message) {
+                return await this.handleMessage(update.message);
+            }
+            
+            if (update.callback_query) {
+                return await this.handleCallbackQuery(update.callback_query);
+            }
+            
+            return { ok: false };
+        } catch (error) {
+            console.error('Handle update error:', error);
+            return { ok: false, error: error.message };
+        }
+    }
+
+    /**
+     * Обработка сообщения
+     */
+    async handleMessage(message) {
+        const userId = message.from.id;
+        const chatId = message.chat.id;
+        const text = message.text || '';
+        
+        // Проверка на команду
+        if (text.startsWith('/')) {
+            const command = text.split(' ')[0].substring(1);
+            const handler = this.handlers?.command?.get(command);
+            
+            if (handler) {
+                return await handler.call(this, message);
+            }
+        }
+        
+        // Обработка через сценарии
+        const state = this.userStates.get(userId);
+        if (state) {
+            const scene = this.scenes[state.scene];
+            if (scene) {
+                await this.processSceneStep(userId, chatId, scene, state.currentBlock || 0, message);
+            }
+        }
+        
+        return { ok: true };
+    }
+
+    /**
+     * Обработка callback query
+     */
+    async handleCallbackQuery(callbackQuery) {
+        const userId = callbackQuery.from.id;
+        const chatId = callbackQuery.message.chat.id;
+        const data = callbackQuery.data;
+        
+        const state = this.userStates.get(userId);
+        if (state) {
+            const scene = this.scenes[state.scene];
+            if (scene) {
+                await this.processSceneStep(userId, chatId, scene, state.currentBlock || 0, {
+                    type: 'callback',
+                    data: data
+                });
+            }
+        }
+        
+        await this.answerCallbackQuery(callbackQuery.id);
+        return { ok: true };
+    }
+
+    /**
+     * Обработка шага сценария
+     */
+    async processSceneStep(userId, chatId, scene, blockIndex, input = null) {
+        const block = scene.blocks[blockIndex];
+        if (!block) {
+            this.userStates.delete(userId);
+            return;
+        }
+        
+        await this.executeBlock(userId, chatId, block, input);
+    }
+
+    /**
+     * Выполнение блока
+     */
+    async executeBlock(userId, chatId, block, input = null) {
+        switch (block.type) {
+            case 'message':
+                await this.sendMessage(chatId, this.substituteVariables(userId, block.text));
+                this.nextBlock(userId, block);
+                break;
+                
+            case 'question':
+                await this.sendMessage(chatId, this.substituteVariables(userId, block.question));
+                this.userStates.set(userId, {
+                    scene: block.scenarioId,
+                    currentBlock: block.index,
+                    variable: block.variable,
+                    expectInput: true
+                });
+                break;
+                
+            case 'keyboard':
+                const keyboard = this.buildKeyboard(block.buttons, block.keyboardType === 'inline');
+                await this.sendMessageWithKeyboard(
+                    chatId,
+                    this.substituteVariables(userId, block.text || 'Выберите опцию'),
+                    keyboard,
+                    block.keyboardType === 'inline'
+                );
+                this.nextBlock(userId, block);
+                break;
+                
+            case 'condition':
+                const value = this.getVariable(userId, block.variable);
+                const conditionMet = this.checkCondition(value, block.operator, block.value);
+                
+                if (conditionMet && block.trueScenario) {
+                    const trueScene = this.scenes[block.trueScenario];
+                    if (trueScene) {
+                        this.userStates.set(userId, { scene: block.trueScenario, currentBlock: 0 });
+                        await this.processSceneStep(userId, chatId, trueScene, 0);
+                    }
+                } else if (!conditionMet && block.falseScenario) {
+                    const falseScene = this.scenes[block.falseScenario];
+                    if (falseScene) {
+                        this.userStates.set(userId, { scene: block.falseScenario, currentBlock: 0 });
+                        await this.processSceneStep(userId, chatId, falseScene, 0);
+                    }
+                } else {
+                    this.nextBlock(userId, block);
+                }
+                break;
+                
+            case 'action':
+                await this.executeAction(userId, chatId, block);
+                this.nextBlock(userId, block);
+                break;
+        }
+    }
+
+    /**
+     * Переход к следующему блоку
+     */
+    nextBlock(userId, block) {
+        const scene = this.scenes[block.scenarioId];
+        if (scene && block.index !== undefined) {
+            const nextIndex = block.index + 1;
+            if (nextIndex < scene.blocks.length) {
+                this.userStates.set(userId, {
+                    scene: block.scenarioId,
+                    currentBlock: nextIndex
+                });
+            } else {
+                this.userStates.delete(userId);
+            }
+        }
+    }
+
+    /**
+     * Выполнение действия
+     */
+    async executeAction(userId, chatId, block) {
+        switch (block.actionType) {
+            case 'set_variable':
+                this.setVariable(userId, block.variable, this.substituteVariables(userId, block.value));
+                break;
+            case 'clear_variable':
+                this.clearVariable(userId, block.variable);
+                break;
+            case 'delay':
+                await new Promise(resolve => setTimeout(resolve, block.delay || 1000));
+                break;
+            case 'api_request':
+                try {
+                    const response = await fetch(block.url, {
+                        method: block.method || 'GET',
+                        headers: block.headers || {},
+                        body: block.body ? JSON.stringify(block.body) : null
+                    });
+                    const data = await response.json();
+                    this.setVariable(userId, 'api_response', data);
+                } catch (error) {
+                    console.error('API request error:', error);
+                }
+                break;
+            case 'send_message':
+                await this.sendMessage(chatId, this.substituteVariables(userId, block.text));
+                break;
+        }
+    }
+
+    /**
+     * Построение клавиатуры
+     */
+    buildKeyboard(buttons, inline = false) {
+        if (!buttons || !Array.isArray(buttons)) return [];
+        
+        const keyboard = [];
+        let row = [];
+        
+        for (const button of buttons) {
+            if (inline) {
+                row.push({ text: button.text, callback_data: button.callback });
+            } else {
+                row.push(button.text);
+            }
+            
+            if (button.newRow || row.length >= 2) {
+                keyboard.push(row);
+                row = [];
+            }
+        }
+        
+        if (row.length > 0) keyboard.push(row);
+        return keyboard;
+    }
+
+    /**
+     * Подстановка переменных
+     */
+    substituteVariables(userId, text) {
+        if (!text) return '';
+        
+        return text.replace(/\\{\\{(\\w+)\\}\\}/g, (match, variable) => {
+            return this.getVariable(userId, variable, match);
+        });
+    }
+
+    /**
+     * Проверка условия
+     */
+    checkCondition(value, operator, expected) {
+        switch (operator) {
+            case 'equals': return value == expected;
+            case 'not_equals': return value != expected;
+            case 'contains': return value && value.includes(expected);
+            case 'empty': return !value || value === '';
+            case 'not_empty': return value && value !== '';
+            case 'greater': return Number(value) > Number(expected);
+            case 'less': return Number(value) < Number(expected);
+            default: return false;
+        }
+    }
+
+    /**
+     * Переменные пользователя
+     */
+    getVariable(userId, name, defaultValue = null) {
+        const vars = this.userVariables.get(userId) || {};
+        return vars[name] !== undefined ? vars[name] : defaultValue;
+    }
+
+    setVariable(userId, name, value) {
+        if (!this.userVariables.has(userId)) {
+            this.userVariables.set(userId, {});
+        }
+        this.userVariables.get(userId)[name] = value;
+    }
+
+    clearVariable(userId, name) {
+        const vars = this.userVariables.get(userId);
+        if (vars) delete vars[name];
+    }
+
+    /**
+     * Обработчики
+     */
+    onCommand(command, handler) {
+        if (!this.handlers) this.handlers = { command: new Map() };
+        if (!this.handlers.command) this.handlers.command = new Map();
+        this.handlers.command.set(command, handler);
+    }
+
+    /**
+     * Запуск polling
+     */
+    async startPolling(options = {}) {
+        const { timeout = 30, limit = 100 } = options;
+        let offset = 0;
+        
+        console.log('🤖 Бот запущен в режиме polling...');
+        console.log('Нажмите Ctrl+C для остановки');
+        
+        // Получаем информацию о боте
+        const me = await this.request('getMe');
+        if (me.ok) {
+            console.log(\`✅ Бот: @\${me.result.username}\`);
+        }
+        
+        while (true) {
+            try {
+                const updates = await this.request('getUpdates', {
+                    offset: offset,
+                    limit: limit,
+                    timeout: timeout
+                });
+                
+                if (updates.ok && updates.result) {
+                    for (const update of updates.result) {
+                        offset = update.update_id + 1;
+                        await this.handleUpdate(update);
+                    }
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    /**
+     * Запуск webhook сервера
+     */
+    startWebhook(port = 3000) {
+        const app = express();
+        
+        app.use(express.json());
+        
+        // Endpoint для webhook
+        app.post('/webhook', (req, res) => {
+            this.handleUpdate(req.body)
+                .then(() => res.json({ ok: true }))
+                .catch(error => {
+                    console.error('Webhook error:', error);
+                    res.status(500).json({ ok: false });
+                });
+        });
+        
+        // Health check
+        app.get('/health', (req, res) => {
+            res.json({ status: 'ok' });
+        });
+        
+        app.listen(port, async () => {
+            console.log(\`🤖 Бот запущен на порту \${port}\`);
+            console.log(\`Webhook URL: \${this.webhookUrl || 'не установлен'}\`);
+            
+            if (this.webhookUrl) {
+                const result = await this.request('setWebhook', { url: this.webhookUrl });
+                if (result.ok) {
+                    console.log('✅ Webhook установлен');
+                }
+            }
+        });
+    }
+}
+
+// Создаём и запускаем бота
+const bot = new TelegramBot(BOT_TOKEN, WEBHOOK_URL);
+
+// Запуск в режиме polling или webhook
+const MODE = process.env.BOT_MODE || 'polling';
+
+if (MODE === 'webhook') {
+    const PORT = process.env.PORT || 3000;
+    bot.startWebhook(PORT);
+} else {
+    bot.startPolling();
+}
+`;
     },
 
     /**

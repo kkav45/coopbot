@@ -10,6 +10,7 @@
 ### 🎨 Визуальный редактор
 - **Блочная структура** — создавайте сценарии из готовых блоков
 - **Drag-and-drop** — перемещайте блоки местами
+- **Node-based редактор** — визуальные узлы и связи в стиле n8n
 - **Типы блоков:**
   - 💬 Сообщение — отправка текста
   - ❓ Вопрос — запрос данных у пользователя
@@ -44,7 +45,8 @@
 - **VPS** — скрипты для ручного деплоя
 
 ### 🚀 Готовый к запуску
-- **Python раннер** — универсальный бот на aiogram
+- **JavaScript раннер** — универсальный бот на Node.js (без Python!)
+- **Python раннер** — бот на aiogram (опционально)
 - **Docker готов** — контейнеризация из коробки
 - **Хостинг** — Railway, Render, VPS
 
@@ -55,19 +57,23 @@ bot-builder/
 ├── index.html              # Главный экран конструктора
 ├── css/
 │   ├── style.css           # Основные стили
-│   └── builder.css         # Стили редактора
+│   ├── builder.css         # Стили редактора
+│   └── node-editor.css     # Node-based редактор (n8n style)
 ├── js/
 │   ├── app.js              # Основная логика
 │   ├── builder.js          # Визуальный редактор
-│   ├── exporter.js         # Экспорт в JSON
+│   ├── node-editor.js      # Node-based редактор
+│   ├── telegram-bot.js     # JS библиотека для бота
+│   ├── exporter.js         # Экспорт в JSON/JS
 │   ├── github-api.js       # GitHub интеграция
 │   ├── s3-api.js           # S3 интеграция
 │   └── ui.js               # UI утилиты
 ├── templates/
-│   └── bot-template/       # Шаблон готового бота
-│       ├── bot.py
+│   ├── bot-template/       # Шаблон бота на Python
+│   └── bot-template-js/    # Шаблон бота на JavaScript ⭐
+│       ├── bot.js
 │       ├── bot-config.json
-│       ├── requirements.txt
+│       ├── package.json
 │       ├── .env.example
 │       └── README.md
 └── README.md
