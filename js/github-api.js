@@ -262,7 +262,7 @@ const githubSync = {
      */
     async loadBotsFromGitHub() {
         const { token, repo, username } = app.settings.github;
-        
+
         try {
             const response = await fetch(
                 `https://api.github.com/repos/${username}/${repo}/contents/bots`,
@@ -275,6 +275,11 @@ const githubSync = {
             );
 
             if (!response.ok) {
+                if (response.status === 404) {
+                    // Папка bots ещё не существует - это нормально
+                    console.log('Папка bots/ пуста или не существует');
+                    return [];
+                }
                 return [];
             }
 
@@ -296,7 +301,9 @@ const githubSync = {
 
             return bots;
         } catch (error) {
-            console.error('Load bots error:', error);
+            if (error.message !== 'File not found') {
+                console.error('Load bots error:', error);
+            }
             return [];
         }
     },
