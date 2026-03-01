@@ -191,10 +191,10 @@ const app = {
 
         this.currentBot = bot;
         document.getElementById('editorBotTitle').textContent = `Редактор: ${bot.name}`;
-        
-        // Инициализируем builder
-        builder.init(bot);
-        
+
+        // Инициализируем node editor
+        nodeEditor.init(bot.scenes || []);
+
         this.showView('editor');
     },
 

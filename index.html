@@ -6,6 +6,7 @@
     <title>No-Code Конструктор Telegram Ботов</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/builder.css">
+    <link rel="stylesheet" href="css/node-editor.css">
 </head>
 <body>
     <div class="app-container">
@@ -92,60 +93,103 @@
                         <h2 id="editorBotTitle">Редактор бота</h2>
                     </div>
                     <div class="header-actions">
-                        <button class="btn btn-secondary" onclick="exporter.exportBot()">
+                        <button class="btn btn-secondary" onclick="nodeEditor.exportToScenarios(); exporter.exportBot()">
                             💾 Экспорт JSON
                         </button>
-                        <button class="btn btn-success" onclick="githubSync.pushToGitHub()">
+                        <button class="btn btn-success" onclick="nodeEditor.exportToScenarios(); githubSync.pushToGitHub()">
                             🚀 Опубликовать
+                        </button>
+                        <button class="btn btn-primary" onclick="nodeEditor.resetZoom()">
+                            ⟲ Сброс
                         </button>
                     </div>
                 </header>
-                
-                <div class="editor-container">
-                    <!-- Панель инструментов -->
-                    <div class="toolbar">
-                        <h3>Инструменты</h3>
-                        <button class="tool-btn" onclick="builder.addBlock('message')">
-                            💬 Сообщение
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('question')">
-                            ❓ Вопрос
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('condition')">
-                            🔀 Условие
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('action')">
-                            ⚡ Действие
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('keyboard')">
-                            ⌨️ Клавиатура
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('database')">
-                            🗄️ БД (Google Sheets)
-                        </button>
-                        <button class="tool-btn" onclick="builder.addBlock('loop')">
-                            🔁 Цикл
-                        </button>
+
+                <div class="node-editor">
+                    <!-- Панель инструментов (слева) -->
+                    <div class="node-palette">
+                        <h3>📦 Блоки</h3>
+                        <div class="palette-node" draggable="true" data-type="message">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">💬</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Сообщение</div>
+                                <div class="palette-node-desc">Отправка текста</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="question">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">❓</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Вопрос</div>
+                                <div class="palette-node-desc">Запрос данных</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="condition">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">🔀</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Условие</div>
+                                <div class="palette-node-desc">Ветвление</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="action">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #10b981, #059669);">⚡</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Действие</div>
+                                <div class="palette-node-desc">Переменные, API</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="keyboard">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">⌨️</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Клавиатура</div>
+                                <div class="palette-node-desc">Кнопки</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="database">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">🗄️</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">База данных</div>
+                                <div class="palette-node-desc">Google Sheets</div>
+                            </div>
+                        </div>
+                        <div class="palette-node" draggable="true" data-type="loop">
+                            <div class="palette-node-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">🔁</div>
+                            <div class="palette-node-info">
+                                <div class="palette-node-title">Цикл</div>
+                                <div class="palette-node-desc">Итерация</div>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 24px;">📋 Сценарии</h3>
+                        <div id="scenarioList"></div>
                     </div>
 
-                    <!-- Область сценариев -->
-                    <div class="scenarios-area">
-                        <div class="scenarios-header">
-                            <h3>Сценарии диалога</h3>
-                            <button class="btn btn-sm btn-primary" onclick="builder.addScenario()">
-                                + Сценарий
-                            </button>
+                    <!-- Canvas (центр) -->
+                    <div class="canvas-container">
+                        <div class="canvas-wrapper">
+                            <div class="canvas-content">
+                                <!-- Узлы и соединения будут здесь -->
+                            </div>
                         </div>
-                        <div class="scenarios-list" id="scenariosList">
-                            <!-- Сценарии будут добавлены динамически -->
+                        
+                        <!-- Контролы зума -->
+                        <div class="canvas-controls">
+                            <button class="canvas-control-btn" onclick="nodeEditor.zoomIn()" title="Увеличить">➕</button>
+                            <button class="canvas-control-btn" onclick="nodeEditor.zoomOut()" title="Уменьшить">➖</button>
+                            <button class="canvas-control-btn" onclick="nodeEditor.resetZoom()" title="Сбросить">⟲</button>
                         </div>
+                        
+                        <!-- Индикатор зума -->
+                        <div class="zoom-indicator">100%</div>
                     </div>
 
-                    <!-- Панель свойств -->
-                    <div class="properties-panel" id="propertiesPanel">
-                        <h3>Свойства</h3>
+                    <!-- Панель свойств (справа) -->
+                    <div class="properties-panel">
+                        <div class="properties-header">
+                            <h3>Свойства</h3>
+                            <button class="properties-close" onclick="document.getElementById('propertiesContent').innerHTML = '<p class=\'hint\'>Выберите элемент</p>'">×</button>
+                        </div>
                         <div class="properties-content" id="propertiesContent">
-                            <p class="hint">Выберите элемент для редактирования</p>
+                            <p class="hint">Выберите узел или соединение</p>
                         </div>
                     </div>
                 </div>
@@ -310,6 +354,7 @@
 
     <script src="js/app.js"></script>
     <script src="js/builder.js"></script>
+    <script src="js/node-editor.js"></script>
     <script src="js/exporter.js"></script>
     <script src="js/github-api.js"></script>
     <script src="js/s3-api.js"></script>
