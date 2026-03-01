@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-03-01T12:07:17.629Z",
+  "bot": {
+    "id": "bot_1772366612141_zayjykit3",
+    "name": "Личный помощник",
+    "username": "AV_Kuznetsov_bot",
+    "description": "",
+    "createdAt": "2026-03-01T12:03:32.141Z",
+    "updatedAt": "2026-03-01T12:03:32.141Z"
+  },
+  "config": {
+    "scenes": [
+      {
+        "id": "start",
+        "name": "Главное меню",
+        "trigger": "/start",
+        "message": "Добро пожаловать! Чем я могу помочь?",
+        "blocks": []
+      }
+    ],
+    "variables": [],
+    "integrations": {
+      "googleSheets": {
+        "enabled": false
+      },
+      "payments": {
+        "enabled": false
+      },
+      "ai": {
+        "enabled": false
+      }
+    }
+  }
+}
