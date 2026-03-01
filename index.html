@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No-Code Конструктор Telegram Ботов</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/builder.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Боковая панель -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 BotBuilder</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-view="dashboard">📊 Мои боты</button>
+                <button class="nav-btn" data-view="create">➕ Создать бота</button>
+                <button class="nav-btn" data-view="miniapps">📱 Mini Apps</button>
+                <button class="nav-btn" data-view="database">🗄️ База данных</button>
+                <button class="nav-btn" data-view="settings">⚙️ Настройки</button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="github-status" id="githubStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">GitHub не подключён</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Основная область -->
+        <main class="main-content">
+            <!-- View: Dashboard (список ботов) -->
+            <div id="dashboardView" class="view active">
+                <header class="view-header">
+                    <h2>Мои боты</h2>
+                    <button class="btn btn-primary" onclick="app.showView('create')">
+                        + Новый бот
+                    </button>
+                </header>
+                <div class="bots-grid" id="botsGrid">
+                    <!-- Боты будут добавлены динамически -->
+                    <div class="empty-state" id="emptyState">
+                        <p>📭 У вас пока нет ботов</p>
+                        <button class="btn btn-primary" onclick="app.showView('create')">
+                            Создать первого бота
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Создание бота -->
+            <div id="createView" class="view">
+                <header class="view-header">
+                    <h2>Создание нового бота</h2>
+                    <button class="btn btn-secondary" onclick="app.showView('dashboard')">
+                        ← Назад
+                    </button>
+                </header>
+                <form class="form" id="createBotForm">
+                    <div class="form-group">
+                        <label for="botName">Название бота</label>
+                        <input type="text" id="botName" required placeholder="Например: Магазин цветов">
+                    </div>
+                    <div class="form-group">
+                        <label for="botUsername">Username бота (без @)</label>
+                        <input type="text" id="botUsername" required placeholder="Например: flower_shop_bot">
+                    </div>
+                    <div class="form-group">
+                        <label for="botToken">Токен от @BotFather</label>
+                        <input type="password" id="botToken" required placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+                        <small>Получите токен в @BotFather в Telegram</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="botDescription">Описание</label>
+                        <textarea id="botDescription" rows="3" placeholder="Краткое описание бота..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Создать бота</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- View: Редактор бота -->
+            <div id="editorView" class="view">
+                <header class="view-header">
+                    <div class="header-left">
+                        <button class="btn btn-secondary btn-sm" onclick="app.showView('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2 id="editorBotTitle">Редактор бота</h2>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="exporter.exportBot()">
+                            💾 Экспорт JSON
+                        </button>
+                        <button class="btn btn-success" onclick="githubSync.pushToGitHub()">
+                            🚀 Опубликовать
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="editor-container">
+                    <!-- Панель инструментов -->
+                    <div class="toolbar">
+                        <h3>Инструменты</h3>
+                        <button class="tool-btn" onclick="builder.addBlock('message')">
+                            💬 Сообщение
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('question')">
+                            ❓ Вопрос
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('condition')">
+                            🔀 Условие
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('action')">
+                            ⚡ Действие
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('keyboard')">
+                            ⌨️ Клавиатура
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('database')">
+                            🗄️ БД (Google Sheets)
+                        </button>
+                        <button class="tool-btn" onclick="builder.addBlock('loop')">
+                            🔁 Цикл
+                        </button>
+                    </div>
+
+                    <!-- Область сценариев -->
+                    <div class="scenarios-area">
+                        <div class="scenarios-header">
+                            <h3>Сценарии диалога</h3>
+                            <button class="btn btn-sm btn-primary" onclick="builder.addScenario()">
+                                + Сценарий
+                            </button>
+                        </div>
+                        <div class="scenarios-list" id="scenariosList">
+                            <!-- Сценарии будут добавлены динамически -->
+                        </div>
+                    </div>
+
+                    <!-- Панель свойств -->
+                    <div class="properties-panel" id="propertiesPanel">
+                        <h3>Свойства</h3>
+                        <div class="properties-content" id="propertiesContent">
+                            <p class="hint">Выберите элемент для редактирования</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Mini Apps -->
+            <div id="miniappsView" class="view">
+                <header class="view-header">
+                    <h2>📱 Telegram Mini Apps</h2>
+                    <button class="btn btn-primary" onclick="miniApps.createApp()">
+                        + Создать Mini App
+                    </button>
+                </header>
+                <div class="miniapps-container" id="miniappsContainer">
+                    <div class="empty-state" id="miniappsEmpty">
+                        <p>📱 У вас пока нет Mini Apps</p>
+                        <button class="btn btn-primary" onclick="miniApps.createApp()">
+                            Создать первое приложение
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: База данных -->
+            <div id="databaseView" class="view">
+                <header class="view-header">
+                    <h2>🗄️ База данных</h2>
+                </header>
+                <div class="database-container">
+                    <div class="db-card">
+                        <h3>📊 Google Таблицы</h3>
+                        <p>Используйте Google Sheets как базу данных для бота</p>
+                        <form id="googleSheetsForm" class="form">
+                            <div class="form-group">
+                                <label>Spreadsheet ID</label>
+                                <input type="text" id="gsSheetId" placeholder="1BxiMvs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms">
+                                <small>ID из URL Google Таблицы</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Service Account JSON</label>
+                                <textarea id="gsCredentials" rows="5" placeholder='{"type": "service_account", ...}'></textarea>
+                                <small>Скачайте JSON ключ в Google Cloud Console</small>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-primary" onclick="database.connectGoogleSheets()">
+                                    Подключить
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="database.testConnection()">
+                                    Тест
+                                </button>
+                            </div>
+                        </form>
+                        <div class="db-status" id="gsStatus">
+                            <span class="status-dot"></span>
+                            <span>Не подключено</span>
+                        </div>
+                    </div>
+                    <div class="db-card">
+                        <h3>📋 Таблицы</h3>
+                        <div id="sheetsList" class="sheets-list">
+                            <p class="hint">Подключите Google Таблицы для просмотра</p>
+                        </div>
+                    </div>
+                    <div class="db-card">
+                        <h3>🔗 Интеграции</h3>
+                        <div class="integrations-list">
+                            <div class="integration-item">
+                                <span>📊 Google Sheets</span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="gsEnabled" onchange="database.toggleIntegration('googleSheets', this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="integration-item">
+                                <span>🗃️ Airtable</span>
+                                <label class="toggle">
+                                    <input type="checkbox" disabled>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <small>Скоро</small>
+                            </div>
+                            <div class="integration-item">
+                                <span>📈 Notion</span>
+                                <label class="toggle">
+                                    <input type="checkbox" disabled>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <small>Скоро</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Настройки -->
+            <div id="settingsView" class="view">
+                <header class="view-header">
+                    <h2>Настройки</h2>
+                </header>
+                <form class="form" id="settingsForm">
+                    <div class="form-group">
+                        <label>GitHub интеграция</label>
+                        <div class="github-settings">
+                            <input type="text" id="githubToken" placeholder="GitHub Personal Access Token">
+                            <input type="text" id="githubRepo" placeholder="Имя репозитория" value="coopbot">
+                            <input type="text" id="githubUsername" placeholder="GitHub username" value="kkav45">
+                            <button type="button" class="btn btn-primary" onclick="githubSync.connect()">
+                                Подключить
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="githubSync.sync()">
+                                🔄 Синхронизировать
+                            </button>
+                        </div>
+                        <small>Токен нужен для сохранения ботов в GitHub</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Авто-синхронизация</label>
+                        <div class="integration-item">
+                            <span>🔄 Автоматически публиковать ботов при сохранении</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="autoSyncEnabled" onchange="githubSync.autoSync ? githubSync.disableAutoSync() : githubSync.enableAutoSync()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <small>Боты будут автоматически загружаться в GitHub при каждом изменении</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>S3 хранилище</label>
+                        <div class="s3-settings">
+                            <input type="text" id="s3Endpoint" placeholder="S3 Endpoint">
+                            <input type="text" id="s3AccessKey" placeholder="Access Key">
+                            <input type="password" id="s3SecretKey" placeholder="Secret Key">
+                            <input type="text" id="s3Bucket" placeholder="Имя бакета">
+                            <button type="button" class="btn btn-primary" onclick="s3Sync.connect()">
+                                Подключить
+                            </button>
+                        </div>
+                        <small>Для хранения медиафайлов бота</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно для предпросмотра -->
+    <div class="modal" id="previewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Предпросмотр бота</h3>
+                <button class="modal-close" onclick="ui.closeModal('previewModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Предпросмотр -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/builder.js"></script>
+    <script src="js/exporter.js"></script>
+    <script src="js/github-api.js"></script>
+    <script src="js/s3-api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/miniapps.js"></script>
+    <script src="js/database.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+name: Deploy Telegram Bot
+
+on:
+  push:
+    paths:
+      - 'bots/**'
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bot_name:
+        description: 'Имя бота для деплоя (username)'
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Get bot name from input or detect changes
+        id: bot_name
+        run: |
+          if [ -n "${{ github.event.inputs.bot_name }}" ]; then
+            echo "bot_name=${{ github.event.inputs.bot_name }}" >> $GITHUB_OUTPUT
+          else
+            # Detect changed bot from git diff
+            CHANGED_BOTS=$(git diff --name-only HEAD~1 HEAD | grep '^bots/' | cut -d'/' -f2 | sort -u | head -1)
+            if [ -n "$CHANGED_BOTS" ]; then
+              echo "bot_name=$CHANGED_BOTS" >> $GITHUB_OUTPUT
+            else
+              echo "bot_name=" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Check if bot exists
+        id: check_bot
+        run: |
+          if [ -n "${{ steps.bot_name.outputs.bot_name }}" ] && [ -d "bots/${{ steps.bot_name.outputs.bot_name }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Railway
+        if: steps.check_bot.outputs.exists == 'true' && env.RAILWAY_API_KEY != ''
+        uses: railwayapp/deploy@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_API_KEY }}
+          workdir: bots/${{ steps.bot_name.outputs.bot_name }}
+          
+      - name: Deploy to Render
+        if: steps.check_bot.outputs.exists == 'true' && env.RENDER_API_KEY != ''
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
+            
+      - name: Create deployment status
+        if: steps.check_bot.outputs.exists == 'true'
+        run: |
+          echo "✅ Bot ${{ steps.bot_name.outputs.bot_name }} deployed successfully!"
+          echo "📁 Path: bots/${{ steps.bot_name.outputs.bot_name }}"
+          
+      - name: No bot found
+        if: steps.check_bot.outputs.exists == 'false'
+        run: |
+          echo "⚠️ No bot changes detected or bot not found"
+          echo "Specify bot name manually via workflow_dispatch"

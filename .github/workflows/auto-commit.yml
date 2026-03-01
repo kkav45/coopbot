@@ -1,0 +1,68 @@
+name: Auto-Commit Bot Changes
+
+on:
+  repository_dispatch:
+    types: [bot_update]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Действие (sync/cleanup)'
+        required: false
+        default: 'sync'
+  push:
+    paths:
+      - 'bots/**'
+    branches:
+      - main
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Check for bot files
+        id: check_files
+        run: |
+          if [ -d "bots" ]; then
+            echo "has_bots=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_bots=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit any pending changes
+        if: steps.check_files.outputs.has_bots == 'true'
+        run: |
+          git add -A
+          git diff --staged --quiet || git commit -m "🤖 Auto-commit bot updates [skip ci]"
+
+      - name: Push changes
+        if: steps.check_files.outputs.has_bots == 'true'
+        run: |
+          git push origin main || echo "No changes to push"
+
+      - name: Create status summary
+        run: |
+          echo "## Bot Repository Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Auto-commit completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Bots:" >> $GITHUB_STEP_SUMMARY
+          for dir in bots/*/; do
+            if [ -d "$dir" ]; then
+              bot_name=$(basename "$dir")
+              echo "- 🤖 \`$bot_name\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

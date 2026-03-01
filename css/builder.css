@@ -1,0 +1,558 @@
+/* Стили визуального редактора ботов */
+
+.editor-container {
+    display: grid;
+    grid-template-columns: 200px 1fr 300px;
+    gap: 16px;
+    height: calc(100vh - 140px);
+    min-height: 600px;
+}
+
+/* Toolbar */
+.toolbar {
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.toolbar h3 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tool-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.tool-btn:last-child {
+    margin-bottom: 0;
+}
+
+/* Scenarios Area */
+.scenarios-area {
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.scenarios-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.scenarios-header h3 {
+    font-size: 16px;
+}
+
+.scenarios-list {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Scenario Card */
+.scenario-card {
+    background-color: var(--bg-light);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.scenario-card:hover {
+    border-color: var(--primary-color);
+}
+
+.scenario-card.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(36, 129, 204, 0.2);
+}
+
+.scenario-card.selected {
+    border-color: var(--success-color);
+}
+
+.scenario-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.scenario-card-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.scenario-card-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.scenario-card:hover .scenario-card-actions {
+    opacity: 1;
+}
+
+.scenario-card-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.scenario-trigger {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+/* Blocks within scenario */
+.blocks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.block-item {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.block-item:hover {
+    border-color: var(--primary-color);
+}
+
+.block-item.selected {
+    border-color: var(--success-color);
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.block-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.block-icon.message {
+    background-color: rgba(36, 129, 204, 0.2);
+}
+
+.block-icon.question {
+    background-color: rgba(255, 193, 7, 0.2);
+}
+
+.block-icon.condition {
+    background-color: rgba(108, 117, 125, 0.2);
+}
+
+.block-icon.action {
+    background-color: rgba(40, 167, 69, 0.2);
+}
+
+.block-icon.keyboard {
+    background-color: rgba(220, 53, 69, 0.2);
+}
+
+.block-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.block-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.block-preview {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.block-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.block-item:hover .block-actions {
+    opacity: 1;
+}
+
+.block-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-light);
+    color: var(--text-secondary);
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.block-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+.block-btn.delete:hover {
+    background-color: var(--danger-color);
+}
+
+/* Properties Panel */
+.properties-panel {
+    background-color: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.properties-panel h3 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.properties-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.properties-content .hint {
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.property-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.property-group label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.property-group input,
+.property-group textarea,
+.property-group select {
+    width: 100%;
+    padding: 10px 14px;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.property-group input:focus,
+.property-group textarea:focus,
+.property-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.property-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Buttons Editor */
+.buttons-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.button-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+    background-color: var(--bg-light);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.button-item input {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.button-item .btn-remove {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--danger-color);
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-add {
+    padding: 10px;
+    background-color: var(--bg-light);
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: center;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.btn-add:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Condition Editor */
+.condition-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.condition-row select,
+.condition-row input {
+    padding: 8px 12px;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.condition-row select {
+    min-width: 100px;
+}
+
+.condition-row input {
+    flex: 1;
+}
+
+/* Scenario Tabs */
+.scenario-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.scenario-tab {
+    padding: 8px 16px;
+    background-color: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.scenario-tab:hover {
+    background-color: var(--bg-card);
+}
+
+.scenario-tab.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+/* Preview Phone */
+.phone-preview {
+    width: 320px;
+    height: 580px;
+    background-color: #0e1621;
+    border-radius: 24px;
+    border: 8px solid #1c242f;
+    margin: 0 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.phone-header {
+    background-color: #17212b;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.phone-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--success-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.phone-info h4 {
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.phone-info p {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.phone-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.phone-message {
+    max-width: 85%;
+    padding: 10px 14px;
+    background-color: #182533;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.phone-message.bot {
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.phone-message.user {
+    align-self: flex-end;
+    background-color: #2b5278;
+    border-bottom-right-radius: 4px;
+}
+
+.phone-keyboard {
+    padding: 12px;
+    background-color: #17212b;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.phone-keyboard button {
+    padding: 12px;
+    background-color: #2b5278;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.phone-keyboard button:hover {
+    background-color: #36628e;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .editor-container {
+        grid-template-columns: 180px 1fr;
+    }
+    
+    .properties-panel {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .editor-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .toolbar {
+        display: flex;
+        overflow-x: auto;
+        padding: 12px;
+    }
+    
+    .tool-btn {
+        width: auto;
+        margin-bottom: 0;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+}
